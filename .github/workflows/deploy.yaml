@@ -1,0 +1,67 @@
+name: Terraform Deploy
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'infra/**'
+      - '.github/workflows/deploy.yaml'
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  TF_WORKING_DIR: infra/environments/prod
+
+jobs:
+  terraform-deploy:
+    name: Terraform Apply
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials via OIDC
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+
+      - name: Terraform Init
+        working-directory: ${{ env.TF_WORKING_DIR }}
+        run: terraform init
+
+      - name: Terraform Apply
+        working-directory: ${{ env.TF_WORKING_DIR }}
+        env:
+          TF_VAR_aws_region: ${{ secrets.AWS_REGION }}
+          TF_VAR_environment: prod
+          TF_VAR_domain_name: gus-threat-modelling-tool.com
+          TF_VAR_subdomain: tm
+          TF_VAR_image_tag: latest
+        run: terraform apply -auto-approve
+
+      - name: Post-deploy health check
+        run: |
+          sleep 30
+          response=$(curl -s -o /dev/null -w "%{http_code}" https://tm.gus-threat-modelling-tool.com/health)
+          if [ $response -eq 200 ]; then
+            echo "Health check passed "
+          else
+            echo "Health check failed  - HTTP $response"
+            exit 1
+          fi
+
+      - name: Job summary
+        run: |
+          echo "## Terraform Deploy Summary" >> $GITHUB_STEP_SUMMARY
+          echo "- Apply: DONE" >> $GITHUB_STEP_SUMMARY
+          echo "- Health check: PASSED" >> $GITHUB_STEP_SUMMARY
+          echo "- URL: https://tm.gus-threat-modelling-tool.com" >> $GITHUB_STEP_SUMMARY
