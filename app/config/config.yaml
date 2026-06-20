@@ -2,7 +2,7 @@ web:
   port: 8080
 
 ui:
-  title: "Gus Status Dashboard"
+  title: "Augustine's Status Dashboard"
   description: "Gatus monitoring dashboard deployed on AWS ECS Fargate"
 
 endpoints:
