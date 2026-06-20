@@ -13,6 +13,11 @@ variable "public_subnet_ids" {
   type        = list(string)
 }
 
+variable "private_subnet_ids" {
+  description = "Private subnet IDs for ECS tasks"
+  type        = list(string)
+}
+
 variable "alb_sg_id" {
   description = "ALB security group ID"
   type        = string
