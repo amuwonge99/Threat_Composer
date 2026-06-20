@@ -27,11 +27,5 @@ endpoints:
     conditions:
       - "[STATUS] == 200"
   
-  - name: Kubrick Group
-    group: Internal
-    url: https://kubrickgroup.com/
-    interval: 30s
-    conditions:
-      - "[STATUS] == 200"
 
 
