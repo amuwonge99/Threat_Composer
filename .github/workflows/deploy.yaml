@@ -43,6 +43,8 @@ jobs:
         env:
           TF_VAR_aws_region: ${{ secrets.AWS_REGION }}
           TF_VAR_environment: prod
+          TF_VAR_cloudflare_api_token: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          TF_VAR_cloudflare_zone_id: ${{ secrets.CLOUDFLARE_ZONE_ID }}
           TF_VAR_domain_name: gus-threat-modelling-tool.com
           TF_VAR_subdomain: tm
           TF_VAR_image_tag: latest

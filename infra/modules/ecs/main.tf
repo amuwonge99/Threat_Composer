@@ -4,6 +4,7 @@ resource "aws_security_group" "ecs" {
   vpc_id      = var.vpc_id
 
   ingress {
+    description     = "Allow traffic from ALB on port 8080"
     from_port       = 8080
     to_port         = 8080
     protocol        = "tcp"
@@ -11,6 +12,7 @@ resource "aws_security_group" "ecs" {
   }
 
   egress {
+    description = "Allow all outbound traffic"
     from_port   = 0
     to_port     = 0
     protocol    = "-1"
@@ -89,14 +91,6 @@ resource "aws_ecs_task_definition" "gatus" {
         value = "INFO"
       }
     ]
-
-    healthCheck = {
-      command     = ["CMD-SHELL", "wget -qO- http://localhost:8080/health || exit 1"]
-      interval    = 30
-      timeout     = 5
-      retries     = 3
-      startPeriod = 60
-    }
 
     logConfiguration = {
       logDriver = "awslogs"

@@ -1,6 +1,10 @@
-data "aws_route53_zone" "main" {
-  name         = var.domain_name
-  private_zone = false
+terraform {
+  required_providers {
+    cloudflare = {
+      source  = "cloudflare/cloudflare"
+      version = "~> 4.0"
+    }
+  }
 }
 
 resource "aws_acm_certificate" "main" {
@@ -12,28 +16,29 @@ resource "aws_acm_certificate" "main" {
   }
 
   tags = {
-    Name = "*.${var.domain_name}"
+    Name = "wildcard-${var.domain_name}"
   }
 }
 
-resource "aws_route53_record" "cert_validation" {
+resource "cloudflare_record" "cert_validation" {
   for_each = {
     for dvo in aws_acm_certificate.main.domain_validation_options : dvo.domain_name => {
-      name   = dvo.resource_record_name
-      record = dvo.resource_record_value
-      type   = dvo.resource_record_type
+      name  = dvo.resource_record_name
+      value = dvo.resource_record_value
+      type  = dvo.resource_record_type
     }
   }
 
-  allow_overwrite = true
+  zone_id         = var.cloudflare_zone_id
   name            = each.value.name
-  records         = [each.value.record]
-  ttl             = 60
+  content         = each.value.value
   type            = each.value.type
-  zone_id         = data.aws_route53_zone.main.zone_id
+  ttl             = 60
+  proxied         = false
+  allow_overwrite = true
 }
 
 resource "aws_acm_certificate_validation" "main" {
   certificate_arn         = aws_acm_certificate.main.arn
-  validation_record_fqdns = [for record in aws_route53_record.cert_validation : record.fqdn]
+  validation_record_fqdns = [for record in cloudflare_record.cert_validation : record.hostname]
 }

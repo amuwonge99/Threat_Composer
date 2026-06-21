@@ -9,9 +9,10 @@ module "ecr" {
 }
 
 module "acm" {
-  source      = "../../modules/acm"
-  domain_name = var.domain_name
-  subdomain   = var.subdomain
+  source             = "../../modules/acm"
+  domain_name        = var.domain_name
+  subdomain          = var.subdomain
+  cloudflare_zone_id = var.cloudflare_zone_id
 }
 
 module "alb" {
@@ -42,4 +43,4 @@ module "dns" {
   alb_zone_id  = module.alb.alb_zone_id
 }
 
-##
+######
