@@ -231,32 +231,32 @@ All AWS authentication uses **OIDC** — no static AWS access keys are stored an
 
 ## Issues I Came Across
 
-**Issue 1**: Go version mismatch
+**Issue 1**: Go version mismatch.
 The Dockerfile I used from the cloned Gatus repository used golang:1.23-alpine but Gatus go.mod required Go >= 1.26.3.
 
-**Fix**: Updated Dockerfile to FROM golang:1.26-alpine AS builder.
+**Fix**: I updated my Dockerfile to FROM golang:1.26-alpine AS builder.
 
-**Issue 2**: Running as root in scratch image
+**Issue 2**: Running as root in scratch image.
 The scratch image had no user management so the container defaulted to running as root.
 
 **Fix**: I created an underprivileged user named "nobody" and ran the container as them in the build stage.
 
-**Issue 3**: ECS task failing to pull image
+**Issue 3**: ECS task failing to pull image.
 ECS service deployment failed with CannotPullContainerError - image not found.
 
-**Fix**: Image was pushed with a git SHA tag only. Added a latest tag and pushed
+**Fix**: Initial image was pushed with a git SHA tag only. So I added a latest tag and pushed.
 
-**Issue 4**: SSL certificate mismatch
+**Issue 4**: SSL certificate mismatch.
 The curl returned an SSL error: "no alternative certificate subject name matches target host name 'tm.gus-threat-modelling-tool.com' ".
 
 **Fix**: The ACM certificate was issued for the root domain gus-threat-modelling-tool.com but I was attempting to access the app at tm.gus-threat-modelling-tool.com. I requested a new wildcard certificate for *.gus-threat-modelling-tool.com and updated the ALB HTTPS listener to use it.
 
-**Issue 5**: Having to re-clone Gatus source every time
+**Issue 5**: Having to re-clone Gatus source every time.
 Every time the project was set up fresh, the Gatus source code had to be manually cloned into app/ before docker build would work.
 
 **Fix**: I moved the git clone into the Dockerfile so Docker fetches the source at build time
 
-**Issue 6**: Old git history attached to new repo
+**Issue 6**: Old git history attached to new repo.
 After creating a new GitHub repo, the old git history was still attached locally causing conflicts.
 
 **Fix**: I removed the .git directory then reinitialised
@@ -265,8 +265,8 @@ After creating a new GitHub repo, the old git history was still attached locally
 
 ## Potential Improvements
 
-**Transfer domain to Route 53**. My domain was registered within Cloudflare's 60-day transfer lock window. Once the window passes, I could give full DNS delegation to Route 53, which would eliminate the split-provider setup
+**Transfer domain to Route 53**. My domain was registered within Cloudflare's 60-day transfer lock window. Once the window passes, I could give full DNS delegation to Route 53, which would eliminate the split-provider setup.
 
-**WAF (Web Application Firewall) on ALB**. My checkov scan flagged me having a public ALB without a WAF. A WAF would provide protection against common web attacks, however it carries an additional cost
+**WAF (Web Application Firewall) on ALB**. My checkov scan flagged me having a public ALB without a WAF. A WAF would provide protection against common web attacks, however it carries an additional cost.
 
-**Cloudwatch Alarms**. Currently, logs are shipped to CloudWatch but no alarms are configured. Adding alarms on ECS task failures would improve observability
+**Cloudwatch Alarms**. Currently, logs are shipped to CloudWatch but no alarms are configured. Adding alarms on ECS task failures would improve observability.
