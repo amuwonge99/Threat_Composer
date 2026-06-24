@@ -136,6 +136,10 @@ resource "aws_ecs_service" "gatus" {
     container_port   = 8080
   }
 
+  lifecycle {
+    ignore_changes = [desired_count]
+  }
+
   depends_on = [aws_iam_role_policy_attachment.ecs_task_execution]
 
   tags = {
