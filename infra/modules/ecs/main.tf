@@ -67,8 +67,8 @@ resource "aws_ecs_task_definition" "gatus" {
   family                   = "${var.environment}-gatus"
   network_mode             = "awsvpc"
   requires_compatibilities = ["FARGATE"]
-  cpu                      = "256"
-  memory                   = "512"
+  cpu                      = var.task_cpu
+  memory                   = var.task_memory
   execution_role_arn       = aws_iam_role.ecs_task_execution.arn
 
   container_definitions = jsonencode([{
@@ -96,7 +96,7 @@ resource "aws_ecs_task_definition" "gatus" {
       logDriver = "awslogs"
       options = {
         awslogs-group         = "/ecs/${var.environment}-gatus"
-        awslogs-region        = "eu-west-2"
+        awslogs-region        = var.aws_region
         awslogs-stream-prefix = "ecs"
       }
     }
@@ -110,7 +110,7 @@ resource "aws_ecs_task_definition" "gatus" {
 
 resource "aws_cloudwatch_log_group" "gatus" {
   name              = "/ecs/${var.environment}-gatus"
-  retention_in_days = 7
+  retention_in_days = var.log_retention_days
 
   tags = {
     Environment = var.environment

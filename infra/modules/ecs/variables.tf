@@ -37,3 +37,26 @@ variable "image_tag" {
   description = "Docker image tag"
   type        = string
 }
+
+variable "task_cpu" {
+  description = "CPU units for the ECS task (256, 512, 1024, 2048, 4096)"
+  type        = string
+  default     = "256"
+}
+
+variable "task_memory" {
+  description = "Memory (MB) for the ECS task"
+  type        = string
+  default     = "512"
+}
+
+variable "aws_region" {
+  description = "AWS region for CloudWatch logs"
+  type        = string
+}
+
+variable "log_retention_days" {
+  description = "CloudWatch log retention in days"
+  type        = number
+  default     = 7
+}
