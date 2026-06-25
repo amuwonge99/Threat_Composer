@@ -43,7 +43,7 @@ Gatus is an open-source, Go-based uptime and health monitoring tool. This projec
 
 ## Architecture Diagram
 
-![Architecture Diagram](project_evidence/healthy_dashboard_diagram.drawio.png)
+![Architecture Diagram](project_evidence/architecture-diagram-updated.png)
 
 **Request flow:**
 
@@ -59,6 +59,7 @@ User → Cloudflare DNS → Application Load Balancer (443/HTTPS)
 | ECS Fargate over EC2 | No host management overhead; serverless |
 | Private subnets + NAT Gateway | ECS tasks have no public IP; only inbound access via NAT Gateway |
 | `desired_count = 2` across 2 AZs | Increased redundancy; one task/AZ failure doesn't take the app down |
+| ECS Auto Scaling (min 2, max 4) | Tasks scale out at ≥70% CPU, scale in at ≤20% CPU |
 | `scratch` base Docker image | Minimal attack surface, lighter image |
 | Cloudflare-validated ACM cert | Domain registered via Cloudflare, cert validation happens via API token |
 | Route 53 hosted zone (provisioned, not authoritative) | Created for potential future migration |
@@ -113,7 +114,7 @@ User → Cloudflare DNS → Application Load Balancer (443/HTTPS)
 │       ├── ecr/             # ECR repository & lifecycle policy
 │       ├── acm/             # ACM certificate, Cloudflare DNS validation
 │       ├── alb/             # Application Load Balancer, listeners, target group
-│       ├── ecs/             # ECS cluster, task definition, service, IAM roles
+│       ├── ecs/             # ECS cluster, task definition, service, IAM roles, autoscaling
 │       └── dns/             # Route 53 A record (alias to ALB)
 ├── project_evidence/        # Screenshots, architecture diagram & gif
 ├── .gitignore
@@ -154,11 +155,23 @@ Open `http://localhost:8080` in a browser to see the Gatus dashboard.
 - Custom VPC with 2 public and 2 private subnets (across 2 Availability Zones)
 - Internet Gateway (public subnet egress) and NAT Gateway (private subnet egress)
 - ECS Fargate cluster, task definition, and service (`desired_count = 2`)
+- ECS Service Auto Scaling — step scaling policies triggered by CloudWatch CPU alarms (scale out at ≥70%, scale in at ≤20%)
 - Application Load Balancer with HTTP→HTTPS redirect
 - ACM wildcard certificate, created and DNS-validated entirely through Terraform
 - ECR repository with image scan-on-push and lifecycle policy
 - Route 53 hosted zone and A record (alias to ALB)
 - IAM roles scoped to least privilege for ECS task execution and GitHub Actions OIDC
+
+**ECS module variables** — task CPU, memory, log retention, and AWS region are all parameterised with sensible defaults, allowing different environments to override values without modifying the module:
+ 
+ 
+```hcl
+variable "task_cpu"           { default = "256" }
+variable "task_memory"        { default = "512"  }
+variable "log_retention_days" { default = 7      }
+```
+ 
+The ECS service uses `lifecycle { ignore_changes = [desired_count] }` so Terraform does not override the task count that autoscaling has set at runtime.
 
 **Remote state:**
 
@@ -268,5 +281,3 @@ After creating a new GitHub repo, the old git history was still attached locally
 **Transfer domain to Route 53**. My domain was registered within Cloudflare's 60-day transfer lock window. Once the window passes, I could give full DNS delegation to Route 53, which would eliminate the split-provider setup.
 
 **WAF (Web Application Firewall) on ALB**. My checkov scan flagged me having a public ALB without a WAF. A WAF would provide protection against common web attacks, however it carries an additional cost.
-
-**Cloudwatch Alarms**. Currently, logs are shipped to CloudWatch but no alarms are configured. Adding alarms on ECS task failures would improve observability.
